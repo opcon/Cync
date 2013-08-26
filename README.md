@@ -3,9 +3,6 @@ Cync
 
 A program written in C# for personal use that facilitates syncing music playlists to portable (and non-portable) devices
 
-Note
-====
-I have to sort out the licencsing for the this project, it is released under LGPL v2.1.
 
 
 Build
