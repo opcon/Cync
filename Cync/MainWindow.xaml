@@ -1,0 +1,159 @@
+﻿<Window x:Class="Cync.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Cync" Height="667" Width="964" Closing="Window_Closing_1">
+    <DockPanel LastChildFill="True" Width="Auto" Height="Auto">
+        <StatusBar DockPanel.Dock="Bottom">
+            <Label x:Name="StatusString" HorizontalContentAlignment="Center">Ready</Label>
+            <ProgressBar Height="20" Width="200" x:Name="ProgressBar1"></ProgressBar>
+            <Label x:Name="FreeSpaceIndicator" HorizontalContentAlignment="Center">Unknown</Label>
+        </StatusBar>
+        <TabControl HorizontalContentAlignment="Stretch" VerticalContentAlignment="Stretch" Margin="0,10,0,5" x:Name="MainTabControl">
+            <TabItem Header="Sync">
+                <Grid Background="#FFE5E5E5">
+                    <DockPanel LastChildFill="True">
+                        <Border BorderBrush="Black" BorderThickness="1" Width="317" HorizontalAlignment="Left">
+                            <StackPanel>
+                                <Label Content="Device" HorizontalAlignment="Center"/>
+                                <ComboBox VerticalAlignment="Top" Padding="6,3,5,3" Margin="0,0,0,3" ItemsSource="{Binding UpdateSourceTrigger=PropertyChanged}" x:Name="DeviceComboPicker" SelectionChanged="DeviceComboPicker_SelectionChanged"/>
+                                <Separator></Separator>
+                                <Label Content="Playlist Directory" HorizontalAlignment="Center" VerticalAlignment="Top"/>
+                                <TextBox x:Name="PlaylistDir" Padding="0" Margin="0,0,0,3"/>
+                                <Button Content="Choose" HorizontalAlignment="Center" Padding="5,1" Margin="0,0,0,3" BorderThickness="1" Click="Choose_Click"></Button>
+                                <Separator Margin="0,2"/>
+                                <Button Content="Scan" Margin="0,3" HorizontalAlignment="Center" Padding="3,1" Click="Scan_Click"/>
+                                <Separator></Separator>
+                                <Button x:Name="ReviewButton" Content="Review" HorizontalAlignment="Center" Margin="0,3,0,0" Padding="3,1" IsEnabled="False" Click="Review_Click"/>
+                            </StackPanel>
+                        </Border>
+                        <DataGrid x:Name="PlaylistGrid" ItemsSource="{Binding UpdateSourceTrigger=PropertyChanged}" 
+                                  AutoGenerateColumns="False" AlternatingRowBackground="WhiteSmoke" IsSynchronizedWithCurrentItem="True"
+                                  CanUserAddRows="False">
+                            <DataGrid.Columns>
+                                <DataGridTextColumn
+                                    Header="Name"
+                                    Binding="{Binding Path=Name, Mode=TwoWay}"
+                                    CanUserReorder="False"
+                                    IsReadOnly="False"
+                                    CanUserSort="True"
+                                    SortMemberPath="Name"
+                                    />
+                                <DataGridTextColumn
+                                    Header="Count"
+                                    Binding="{Binding Path=Count, Mode=TwoWay}"
+                                    CanUserReorder="False"
+                                    IsReadOnly="True"
+                                    CanUserSort="True"
+                                    SortMemberPath="Count"
+                                    />
+                                <DataGridTextColumn
+                                    Header="Size"
+                                    Binding="{Binding Path=Size, Mode=OneWay}"
+                                    CanUserReorder="True"
+                                    IsReadOnly="True"
+                                    CanUserSort="True"
+                                    SortMemberPath="Size"
+                                    />
+                                <DataGridCheckBoxColumn 
+                                Header="Sync"
+                                Binding="{Binding Path=Sync, Mode=TwoWay}"
+                                CanUserReorder="False"
+                                IsReadOnly="False"
+                                CanUserSort="True"
+                                SortMemberPath="Sync" />
+                                <DataGridCheckBoxColumn
+                                    Header="Master"
+                                    Binding="{Binding Path=Master, Mode=TwoWay}"
+                                    CanUserReorder="False"
+                                    IsReadOnly="False"
+                                    CanUserSort="True"
+                                    SortMemberPath="Master"
+                                    />
+                            </DataGrid.Columns>
+                        </DataGrid>
+                    </DockPanel>
+
+                </Grid>
+            </TabItem>
+            <TabItem Header="Review" IsEnabled="False">
+                <Grid Background="#FFE5E5E5">
+                    <DockPanel LastChildFill="True">
+                        <Button HorizontalAlignment="Center" DockPanel.Dock="Bottom" Margin="0, 3" Click="Sync_Click" x:Name="SyncButton">Sync</Button>
+                        <DataGrid x:Name="SongDataGrid" DockPanel.Dock="Top"  ItemsSource="{Binding UpdateSourceTrigger=PropertyChanged}" 
+                                  AutoGenerateColumns="True" AlternatingRowBackground="WhiteSmoke" IsSynchronizedWithCurrentItem="True"
+                                  CanUserAddRows="False" VirtualizingPanel.IsVirtualizingWhenGrouping="True">
+                        </DataGrid>
+                    </DockPanel>
+                </Grid>
+            </TabItem>
+            <TabItem Header="Settings">
+                <Grid Background="#FFE5E5E5">
+                    <DockPanel LastChildFill="True">
+                        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Margin="0 5">
+                            <StackPanel>
+                                <ListBox MinWidth="200" MinHeight="200" Margin="5 0" IsSynchronizedWithCurrentItem="True" ItemsSource="{Binding}" x:Name="DeviceListBox" SelectionChanged="DeviceListBox_SelectionChanged"></ListBox>
+                                <StackPanel Orientation="Horizontal" Margin="0 5" HorizontalAlignment="Center" MinHeight="20">
+                                    <Button Margin="3 0" Click="AddDevice_Click">Add</Button>
+                                    <Button Margin="3 0" Click="RemoveDevice_Click">Remove</Button>
+                                    <Button Margin="3 0" Click="RenameDevice_Click">Rename</Button>
+                                </StackPanel>
+                            </StackPanel>
+                            <StackPanel>
+                                <ListBox MinWidth="200" MinHeight="200" Margin="5 0" IsSynchronizedWithCurrentItem="True" ItemsSource="{Binding}" x:Name="DestinationListBox" SelectionChanged="DestinationListBox_SelectionChanged"></ListBox>
+                                <StackPanel Orientation="Horizontal" Margin="0 5" HorizontalAlignment="Center" MinHeight="20">
+                                    <Button Margin="3 0" Click="AddDestination_Click">Add</Button>
+                                    <Button Margin="3 0" Click="RemoveDestination_Click">Remove</Button>
+                                    <Button Margin="3 0">Rename</Button>
+                                </StackPanel>
+                            </StackPanel>
+                            
+                            <StackPanel x:Name="DestinationPropertyPanel">
+                                <StackPanel Orientation="Horizontal" Margin="5 0">
+                                    <Label Margin="5 0">Destination Path</Label>
+                                    <TextBox x:Name="PathDirectory" MinWidth="300" Height="20" Margin="5 0" Text="{Binding DestinationPath}">
+                                    </TextBox>
+                                    <Button Margin="5 0" Click="ChooseDestinationPath_Click">Choose</Button>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="5 0">
+                                    <Label Margin="5 0">File Pattern</Label>
+                                    <TextBox x:Name="FileTemplate" MinWidth="300" Height="20" Margin="5 0" TextChanged="FileTemplate_TextChanged">
+                                        <Binding Path="FileNameTemplate" UpdateSourceTrigger="PropertyChanged">
+                                            <Binding.ValidationRules>
+                                                <ExceptionValidationRule />
+                                            </Binding.ValidationRules>
+                                        </Binding>
+                                    </TextBox>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="5 0">
+                                    <Label Margin="5 0">Pattern Result:</Label>
+                                    <Label Margin="5 0" MinWidth="300" x:Name="ExampleFileName">
+                                        <Binding Path="ExampleName" NotifyOnSourceUpdated="True" UpdateSourceTrigger="PropertyChanged" Mode="OneWay">
+                                        </Binding>
+                                    </Label>   
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="5 0">
+                                    <Label Margin="5 0">Playlist Root</Label>
+                                    <TextBox x:Name="PlaylistRootPath" MinWidth="300" Height="20" Margin="5 0" Text="{Binding PlaylistRoot}"></TextBox>
+                                </StackPanel>
+                                <StackPanel Orientation="Horizontal" Margin="5 0">
+                                    <Label Margin="5 0">Max Files</Label>
+                                    <TextBox x:Name="MaxFileNumber" MinWidth="60" Height="20" Margin="5 0" Text="{Binding MaxFiles}"></TextBox>
+                                    <Label Margin="5 0">Minimum Free Space (MB)</Label>
+                                    <TextBox x:Name="MinDestFreeSpace" MinWidth="100" Height="20" Margin="5 0" Text="{Binding MinFreeSpace}"></TextBox>
+                                </StackPanel>
+                            </StackPanel>
+                        </StackPanel>
+                        <StackPanel DockPanel.Dock="Bottom">
+                            <StackPanel Orientation="Horizontal" Margin="5 0">
+                                <Label Margin="5 0">Playlist Directory</Label>
+                                <TextBox x:Name="PlaylistDirectory" MinWidth="300" Height="20" Margin="5 0" Text="{Binding PlaylistDirectory}"></TextBox>
+                                <Button Margin="5 0" Click="ChoosePlaylistDirectory_Click">Choose</Button>
+                            </StackPanel>
+                        </StackPanel>
+                    </DockPanel>
+                </Grid>
+            </TabItem>
+        </TabControl>
+    </DockPanel>
+    
+</Window>
