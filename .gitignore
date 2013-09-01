@@ -215,5 +215,4 @@ pip-log.txt
 .mr.developer.cfg
 
 #Libraries
-Ookii.Dialogs/
-taglib-sharp-2.1.0.0-windows/
+packages/
