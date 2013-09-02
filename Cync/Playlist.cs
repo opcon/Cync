@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -49,8 +50,18 @@ namespace Cync
                 var s = lines[i];
                 try
                 {
-                    if (reportProgress && count > 10) { worker.ReportProgress(1, 
-                        new PlaylistWorkerState() { CurrentSong = i, PlaylistName = p.Name, PlaylistNumber = index, TotalSongs = lines.Length }); count = 0; }
+                    if (reportProgress && count > 10)
+                    {
+                        worker.ReportProgress(1,
+                            new PlaylistWorkerState()
+                            {
+                                CurrentSong = i,
+                                PlaylistName = p.Name,
+                                PlaylistNumber = index,
+                                TotalSongs = lines.Length
+                            });
+                        count = 0;
+                    }
                     if (File.Exists(s))
                     {
                         var song = new Song(s);
@@ -58,9 +69,13 @@ namespace Cync
                         songs.Add(song);
                     }
                 }
-                catch (Exception ex)
+                catch (TagLib.CorruptFileException corrupt)
                 {
-                    invalidFiles.Add(s);
+                    Log.SaveLogFile(MethodBase.GetCurrentMethod(), corrupt);
+                }
+                catch (TagLib.UnsupportedFormatException unsupported)
+                {
+                    Log.SaveLogFile(MethodBase.GetCurrentMethod(), unsupported);
                 }
             }
 
@@ -101,6 +116,7 @@ namespace Cync
         {
             //TagLib.File file = new AudioFile(f);
             TagLib.File file = TagLib.File.Create(f); 
+            
             var tag = file.Tag;
             Artist = String.IsNullOrWhiteSpace(tag.FirstAlbumArtist) ? tag.FirstArtist : tag.FirstAlbumArtist;
             Album = tag.Album;
@@ -116,27 +132,31 @@ namespace Cync
         {
         }
 
-        public override bool Equals(object obj)
+        protected bool Equals(Song other)
         {
-            // If parameter is null return false.
-            if (obj == null)
-            {
-                return false;
-            }
-
-            // If parameter cannot be cast to Song return false.
-            Song s = obj as Song;
-            if (s == null)
-            {
-                return false;
-            }
-
-            Song song = s;
-
-            // Return true if the fields match:
-            return (Title == song.Title) && (Album == song.Album) && (Artist == song.Artist) && (Genre == song.Genre);
+            return string.Equals(Title, other.Title) && string.Equals(Artist, other.Artist) && string.Equals(Genre, other.Genre) && Track == other.Track && string.Equals(Album, other.Album);
         }
 
+        public override bool Equals(object obj)
+        {
+            if (ReferenceEquals(null, obj)) return false;
+            if (ReferenceEquals(this, obj)) return true;
+            if (obj.GetType() != this.GetType()) return false;
+            return Equals((Song)obj);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                var hashCode = (Title != null ? Title.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (Artist != null ? Artist.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (Genre != null ? Genre.GetHashCode() : 0);
+                hashCode = (hashCode * 397) ^ (int)Track;
+                hashCode = (hashCode * 397) ^ (Album != null ? Album.GetHashCode() : 0);
+                return hashCode;
+            }
+        }
     }
 
     enum SongStatus

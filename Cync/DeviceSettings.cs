@@ -309,7 +309,7 @@ namespace Cync
             }
             catch (Exception ex)
             {
-                MessageBox.Show("Error saving current configuration!");
+                MessageBox.Show(String.Format("Error saving current configuration: {0}", ex));
             }
         }
 

@@ -3,19 +3,10 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.IO;
 using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
-using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 using Ookii.Dialogs.Wpf;
 using System.Collections.ObjectModel;
@@ -29,61 +20,42 @@ namespace Cync
     public partial class MainWindow : Window
     {
         private ObservableCollection<Playlist> Playlists { get; set; }
-        private BackgroundWorker worker = new BackgroundWorker();
-        private DispatcherTimer timer = new DispatcherTimer();
-        private string[] PlaylistFiles;
-
+        private string[] playlistFiles;
         private List<Playlist> PlaylistsToSync { get; set; }
+
         private ObservableCollection<Song> SongsToSync { get; set; }
+
+        private BackgroundWorker worker = new BackgroundWorker();
+        private readonly DispatcherTimer timer = new DispatcherTimer();
 
         private ObservableCollection<DeviceSettings> Devices { get; set; }
 
-        private DeviceSettings testDeviceSettings;
-        private Destination fileTemplateDestination;
-
-        private float MinimumFreeSpace = 10;
-
-        private Serializer serializer;
+        private const float MINIMUM_FREE_SPACE = 10;
+        private readonly Serializer serializer;
 
         public MainWindow()
         {
             InitializeComponent();
 
-            Playlists = new ObservableCollection<Playlist>();
-
-            SongsToSync = new ObservableCollection<Song>();
-
-            serializer = new Serializer();
-
+            Playlists                = new ObservableCollection<Playlist>();
+            SongsToSync              = new ObservableCollection<Song>();
+            serializer               = new Serializer();
             PlaylistGrid.DataContext = Playlists;
 
-            worker.DoWork += LoadPlaylistDoWork;
-            worker.RunWorkerCompleted += LoadPlaylistWorkerCompleted;
-            worker.ProgressChanged += LoadPlaylistProgressChanged;
+            worker.DoWork                += LoadPlaylistDoWork;
+            worker.RunWorkerCompleted    += LoadPlaylistWorkerCompleted;
+            worker.ProgressChanged       += LoadPlaylistProgressChanged;
             worker.WorkerReportsProgress = true;
 
-            timer.Tick += timer_Tick;
+            timer.Tick     += timer_Tick;
             timer.Interval = TimeSpan.FromMilliseconds(10);
 
-            //PlaylistGrid.ItemsSource = Playlists;
-            testDeviceSettings = new DeviceSettings();
-            testDeviceSettings.Name = "Test";
-            testDeviceSettings.PlaylistDirectory = "lol";
-            
-
-            fileTemplateDestination = new Destination(){ExampleName = "test", FileNameTemplate = @"%artist%\%album%\%title% - %artist%"};
-
-            testDeviceSettings.AddDestination(fileTemplateDestination);
-
             Devices = new ObservableCollection<DeviceSettings>();
-            //Devices.Add(testDeviceSettings);
             if (File.Exists("devices.cyn"))
                 Devices = new ObservableCollection<DeviceSettings>(serializer.DeSerializeObject("devices.cyn").DeviceList);
 
-            //Devices = dev;
-            DeviceListBox.DataContext = Devices;
+            DeviceListBox.DataContext     = Devices;
             DeviceComboPicker.DataContext = Devices;
-
             DeviceComboPicker.SelectedItem = Devices.Count > 0 ? Devices[0] : null;
         }
 
@@ -101,7 +73,7 @@ namespace Cync
             var report = (PlaylistWorkerState) e.UserState;
             StatusString.Content = string.Format("Processing {4} ({0}/{1}) | Processing song {2}/{3}",
                                                  report.PlaylistNumber + 1,
-                                                 PlaylistFiles.Length, report.CurrentSong, report.TotalSongs,
+                                                 playlistFiles.Length, report.CurrentSong, report.TotalSongs,
                                                  report.PlaylistName);
         }
 
@@ -126,12 +98,12 @@ namespace Cync
 
             //Playlists.Clear();
 
-            PlaylistFiles = Directory.GetFiles(path, "*.m3u8");
+            playlistFiles = Directory.GetFiles(path, "*.m3u8");
 
-            for (int i = 0; i < PlaylistFiles.Length; i++)
+            for (int i = 0; i < playlistFiles.Length; i++)
             {
 
-                var f = PlaylistFiles[i];
+                var f = playlistFiles[i];
                 var p = Playlist.LoadPlaylist(f, i, worker);
                 play.Add(p);
 
@@ -207,7 +179,7 @@ namespace Cync
                                                               string.Format(
                                                                   "Processing {4} ({0}/{1}) | Processing song {2}/{3}",
                                                                   j + 1,
-                                                                  PlaylistFiles.Length, index, playlist.Songs.Count,
+                                                                  playlistFiles.Length, index, playlist.Songs.Count,
                                                                   playlist.Name)
                                                       });
                         }
@@ -233,17 +205,28 @@ namespace Cync
                         {
                             count++;
                             var file = musicFiles[i];
-                            deviceSongList.Add(new Song(file) { SongDestination = d });
+                            deviceSongList.Add(new Song(file) {SongDestination = d});
                             d.NumberOfSongs++;
                             if (count > 0)
                             {
                                 count = 0;
-                                worker.ReportProgress(0, new PlaylistWorkerState() { Status = string.Format("Reading destination {2} songs: {0}/{1}", i, musicFiles.Count, d) });
+                                worker.ReportProgress(0,
+                                    new PlaylistWorkerState()
+                                    {
+                                        Status =
+                                            string.Format("Reading destination {2} songs: {0}/{1}", i, musicFiles.Count,
+                                                d)
+                                    });
                             }
                         }
-                        catch (Exception ex)
+                        catch (TagLib.CorruptFileException corrupt)
                         {
+                            Log.SaveLogFile(MethodBase.GetCurrentMethod(), corrupt);
                             MessageBox.Show("Error reading mp3 tag of " + musicFiles[i] + ", this file will be skipped.");
+                        }
+                        catch (TagLib.UnsupportedFormatException unsupported)
+                        {
+                            Log.SaveLogFile(MethodBase.GetCurrentMethod(), unsupported);
                         }
                     }
 
@@ -255,11 +238,11 @@ namespace Cync
                     var s = ret.Songs[i];
                     if (deviceSongList.Contains(s))
                     {
-                        var c = deviceSongList.Find(s.Equals);
-                        s.SongStatus = SongStatus.DeviceAndLibrary;
-                        s.DeviceFile = deviceSongList.Find(p => p.Equals(s)).File;
+                        var c              = deviceSongList.Find(s.Equals);
+                        s.SongStatus       = SongStatus.DeviceAndLibrary;
+                        s.DeviceFile       = deviceSongList.Find(p => p.Equals(s)).File;
                         s.RelativeFilePath = s.DeviceFile.Replace(c.SongDestination.DestinationPath, "");
-                        s.Sync = false;
+                        s.Sync             = false;
                         deviceSongList.Remove(s);
                     }
                     else
@@ -270,10 +253,10 @@ namespace Cync
                 }
                 for (int i = 0; i < deviceSongList.Count; i++)
                 {
-                    var song = deviceSongList[i];
+                    var song        = deviceSongList[i];
                     song.SongStatus = SongStatus.Device;
                     song.DeviceFile = song.File;
-                    song.File = "";
+                    song.File       = "";
                     ret.Songs.Add(song);
 
                     song.Sync = false;
@@ -313,48 +296,56 @@ namespace Cync
             }
             else
             {
-                MessageBox.Show("All destinations are full or have reached their song limit");
+                Log.SaveLogFile(MethodBase.GetCurrentMethod(), new Exception("No more destinations left"));
                 throw new Exception("All destinations are full or have reached their song limit");
             }
         }
 
-        void DoSync(object sender, DoWorkEventArgs e)
+        /// <summary>
+        /// Attempts to sync the collection of songs
+        /// </summary>
+        /// <param name="destinations">A list of destinations to be synced to</param>
+        /// <param name="songs">A list of songs to be synced</param>
+        /// <returns>A list of songs that were not synced - most often due to out of space errors</returns>
+        List<Song> SyncCollection(ObservableCollection<Destination> destinations, List<Song> songs)
         {
-            int destinationIndex = 0;
-            var device = e.Argument as DeviceSettings;
-
-            var destinations = (e.Argument as DeviceSettings).Destinations;
+            int destinationIndex   = 0;
             var currentDestination = destinations[destinationIndex];
+            List<Song> unSynced    = new List<Song>();
 
-            var songs = SongsToSync.Where(s => s.Sync);
-            var songsToSync = songs as List<Song> ?? songs.ToList();
-            var largeSongs = new List<Song>();
-
-            //Do the initial sync
-            for (int i = 0; i < songsToSync.Count; i++)
+            for (int i = 0; i < songs.Count; i++)
             {
-                if ((currentDestination.MaxFiles != 0 && currentDestination.NumberOfSongs >= currentDestination.MaxFiles)
-                    || (currentDestination.MinFreeSpace != 0 && currentDestination.FreeSpace >= currentDestination.MinFreeSpace))
-                {
-                    AdvanceDestination(ref destinationIndex, destinations);
-                    currentDestination = destinations[destinationIndex];
+                if (worker.CancellationPending) return null;
+                Song song = songs[i];
 
-                }
-                if (worker.CancellationPending) return;
-                var song = songsToSync[i];
-                worker.ReportProgress(1,
-                                      new PlaylistWorkerState()
-                                          {
-                                              Status =
-                                                  string.Format("Copying song {0}/{1}, {2}", i, songsToSync.Count(),
-                                                                System.IO.Path.GetFileName(song.File))
-                                          });
                 try
                 {
-                    song.RelativeFilePath = Destination.ParseFileTemplate(currentDestination.FileNameTemplate, song) + System.IO.Path.GetExtension(song.File);
-                    string dest = System.IO.Path.Combine(currentDestination.DestinationPath, song.RelativeFilePath);
-                    Directory.CreateDirectory(System.IO.Path.GetDirectoryName(dest));
+                    //Do we need to go to the next destination?
+                    if ((currentDestination.MaxFiles != 0 &&
+                         currentDestination.NumberOfSongs >= currentDestination.MaxFiles)
+                        ||
+                        (currentDestination.MinFreeSpace != 0 &&
+                         currentDestination.FreeSpace >= currentDestination.MinFreeSpace))
+                    {
+                        AdvanceDestination(ref destinationIndex, destinations);
+                        currentDestination = destinations[destinationIndex];
+                    }
+
+                    worker.ReportProgress(1,
+                        new PlaylistWorkerState
+                        {
+                            Status =
+                                string.Format("Copying song {0}/{1}, {2}", i, songs.Count(),
+                                    Path.GetFileName(song.File))
+                        });
+
+                    song.RelativeFilePath = Destination.ParseFileTemplate(currentDestination.FileNameTemplate, song) +
+                                            Path.GetExtension(song.File);
+                    string dest = Path.Combine(currentDestination.DestinationPath, song.RelativeFilePath);
+
+                    Directory.CreateDirectory(Path.GetDirectoryName(dest));
                     File.Copy(song.File, dest);
+
                     song.DeviceFile = dest;
                     song.SongStatus = SongStatus.DeviceAndLibrary;
                     currentDestination.NumberOfSongs++;
@@ -363,83 +354,59 @@ namespace Cync
                 {
                     const long ERROR_HANDLE_DISK_FULL = 0x27;
                     const long ERROR_DISK_FULL = 0x70;
-
                     long win32ErrorCode = Marshal.GetHRForException(ex) & 0xFFFF;
-                    if (win32ErrorCode == ERROR_HANDLE_DISK_FULL || win32ErrorCode == ERROR_DISK_FULL || true)
-                    {
-                        currentDestination.CalculateFreeSpace();
-                        if (currentDestination.FreeSpace < (MinimumFreeSpace / 1024))
-                        {
-                            if (destinationIndex >= destinations.Count - 1)
-                            {
-                                largeSongs.Add(song);
-                                i++;
-                            }
-                            else
-                            {
-                                destinationIndex += 1;
-                                currentDestination = destinations[destinationIndex];
-                            }
 
-                            i--; //Attempt to sync the song again to another destination
-                        }
-                        else
+                    //Log a disk full error
+                    if (win32ErrorCode == ERROR_HANDLE_DISK_FULL || win32ErrorCode == ERROR_DISK_FULL)
+                        Log.SaveLogFile(MethodBase.GetCurrentMethod(), ex);
+
+                    if (currentDestination.FreeSpace < (MINIMUM_FREE_SPACE / 1024))
+                    {
+                        //if we are on the last available destination
+                        if (destinationIndex >= destinations.Count - 1)
                         {
-                            largeSongs.Add(song);
+                            //add song to list of unsynced songs, move on to the next one
+                            unSynced.Add(song);
+                            continue;
                         }
+
+                        //otherwise we move to the next destination
+                        AdvanceDestination(ref destinationIndex, destinations);
+                        currentDestination = destinations[destinationIndex];
+                        //x destinationIndex += 1;
+                        //x currentDestination = destinations[destinationIndex];
+
+                        i--; //Attempt to sync the song again to another destination
+                    }
+                    else if (destinationIndex >= destinations.Count - 1)
+                        //we have been through all destinations, nothing left to do
+                    {
+                        unSynced.AddRange(songs.GetRange(i, songs.Count - i));
+                        break;
+                    }
+                    else
+                        //There is still more than the minimum free space on this destination, so this is just a really big song.
+                    {
+                        unSynced.Add(song);
                     }
                 }
             }
+
+            return unSynced;
+        }
+
+        void DoSync(object sender, DoWorkEventArgs e)
+        {
+            var device       = e.Argument as DeviceSettings;
+            var destinations = (e.Argument as DeviceSettings).Destinations;
+            var songs        = SongsToSync.Where(s => s.Sync);
+            var songsToSync  = songs as List<Song> ?? songs.ToList();
+
+            //Do the initial sync
+            List<Song> unSyncedSongs = SyncCollection(destinations, songsToSync);
             
             //Retry syncing the larger songs that failed
-            for (int i = 0; i < largeSongs.Count; i++)
-            {
-                if (worker.CancellationPending) return;
-                var song = largeSongs[i];
-                worker.ReportProgress(1,
-                                      new PlaylistWorkerState()
-                                      {
-                                          Status =
-                                              string.Format("Copying song {0}/{1}, {2}", i, largeSongs.Count(),
-                                                            System.IO.Path.GetFileName(song.File))
-                                      });
-                try
-                {
-                    song.RelativeFilePath = Destination.ParseFileTemplate(currentDestination.FileNameTemplate, song) + System.IO.Path.GetExtension(song.File);
-                    string dest = System.IO.Path.Combine(currentDestination.DestinationPath, song.RelativeFilePath);
-                    Directory.CreateDirectory(System.IO.Path.GetDirectoryName(dest));
-                    File.Copy(song.File, dest);
-                    song.DeviceFile = dest;
-                    song.SongStatus = SongStatus.DeviceAndLibrary;
-                }
-                catch (Exception ex)
-                {
-                    const long ERROR_HANDLE_DISK_FULL = 0x27;
-                    const long ERROR_DISK_FULL = 0x70;
-
-                    long win32ErrorCode = Marshal.GetHRForException(ex) & 0xFFFF;
-                    if (win32ErrorCode == ERROR_HANDLE_DISK_FULL || win32ErrorCode == ERROR_DISK_FULL)
-                    {
-                        currentDestination.CalculateFreeSpace();
-                        if (currentDestination.FreeSpace < (MinimumFreeSpace / 1024))
-                        {
-                            if (destinationIndex >= destinations.Count - 1)
-                            {
-                                MessageBox.Show("Error: All destinations are full.");
-                                break;
-                            }
-                            destinationIndex += 1;
-                            currentDestination = destinations[destinationIndex];
-
-                            i--;
-                        }
-                        else
-                        {
-                            largeSongs.Add(song);
-                        }
-                    }
-                }
-            }
+            unSyncedSongs = SyncCollection(destinations, new List<Song>(unSyncedSongs));
 
             //Sync the playlists. In the event that there is no room for a playlist, we bail.
             foreach (var playlist in PlaylistsToSync)
@@ -449,16 +416,8 @@ namespace Cync
                 {
                     try
                     {
-                        var root = Path.GetPathRoot(song.DeviceFile);
                         Destination dest = destinations.First(d => song.DeviceFile.Contains(d.DestinationPath));
-                        var trimmedpath = Path.GetFullPath(song.DeviceFile).Substring(3);
-                        //string songRoot = Path.Combine(dest.PlaylistRoot, trimmedpath);
-                        string songRoot = "";
-                        if (!string.IsNullOrWhiteSpace(dest.PlaylistRoot))
-                            songRoot = dest.PlaylistRoot + "\\" + trimmedpath;
-                        else
-                            songRoot = trimmedpath;
-                        string songPath = dest.PlaylistRoot + song.RelativeFilePath;
+                        string songPath  = dest.PlaylistRoot + song.RelativeFilePath;
                         completePlaylist += songPath + "\n";
                     }
                     catch (Exception ex)
@@ -467,7 +426,7 @@ namespace Cync
                     }
                 }
 
-                System.IO.File.WriteAllText(device.PlaylistDirectory + "\\" + playlist.Name + ".m3u8", completePlaylist);
+                File.WriteAllText(device.PlaylistDirectory + "\\" + playlist.Name + ".m3u8", completePlaylist);
             }
         }
         #endregion
@@ -477,7 +436,7 @@ namespace Cync
 
         private void Choose_Click(object sender, RoutedEventArgs e)
         {
-            Ookii.Dialogs.Wpf.VistaFolderBrowserDialog dlg = new VistaFolderBrowserDialog();
+            VistaFolderBrowserDialog dlg = new VistaFolderBrowserDialog();
             // Configure open file dialog box
             bool? result = dlg.ShowDialog();
 
@@ -511,12 +470,12 @@ namespace Cync
             timer.Start();
             StatusString.Content = "Building list of songs...";
 
-            worker.DoWork -= LoadPlaylistDoWork;
-            worker.ProgressChanged -= LoadPlaylistProgressChanged;
+            worker.DoWork             -= LoadPlaylistDoWork;
+            worker.ProgressChanged    -= LoadPlaylistProgressChanged;
             worker.RunWorkerCompleted -= LoadPlaylistWorkerCompleted;
 
-            worker.DoWork += BuildSongListDoWork;
-            worker.ProgressChanged += BuildSongListProgressChanged;
+            worker.DoWork             += BuildSongListDoWork;
+            worker.ProgressChanged    += BuildSongListProgressChanged;
             worker.RunWorkerCompleted += BuildSongListWorkerCompleted;
 
             PlaylistsToSync = Playlists.Where(p => p.Sync).ToList();
@@ -537,12 +496,12 @@ namespace Cync
             timer.Start();
             StatusString.Content = "Syncing Songs";
 
-            worker = new BackgroundWorker();
-            worker.WorkerReportsProgress = true;
+            worker                            = new BackgroundWorker();
+            worker.WorkerReportsProgress      = true;
             worker.WorkerSupportsCancellation = true;
 
-            worker.DoWork += DoSync;
-            worker.ProgressChanged += SyncProgressChanged;
+            worker.DoWork             += DoSync;
+            worker.ProgressChanged    += SyncProgressChanged;
             worker.RunWorkerCompleted += WorkerSyncCompleted;
 
 
@@ -570,14 +529,14 @@ namespace Cync
             {
                 DestinationListBox.DataContext = null;
                 DestinationListBox.DataContext = ((DeviceSettings) DeviceListBox.SelectedItem).Destinations;
-                PlaylistDirectory.DataContext = (DeviceSettings) DeviceListBox.SelectedItem;
+                PlaylistDirectory.DataContext  = (DeviceSettings) DeviceListBox.SelectedItem;
             }
             else DestinationListBox.DataContext = null;
         }
 
         private void ChooseDestinationPath_Click(object sender, RoutedEventArgs e)
         {
-            Ookii.Dialogs.Wpf.VistaFolderBrowserDialog dlg = new VistaFolderBrowserDialog();
+            var dlg = new VistaFolderBrowserDialog();
             // Configure open file dialog box
             bool? result = dlg.ShowDialog();
 
