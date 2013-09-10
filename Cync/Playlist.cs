@@ -125,7 +125,7 @@ namespace Cync
             Track = tag.Track;
             File = f;
 
-            Size = new FileInfo(f).Length / 1024 / 1024;
+            Size = new FileInfo(f).Length / (1024*1024);
         }
 
         public Song()
