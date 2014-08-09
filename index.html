@@ -1,44 +1,42 @@
 <!doctype html>
+<!-- The Time Machine GitHub pages theme was designed and developed by Jon Rohan, on Feb 7, 2012. -->
+<!-- Follow him for fun. http://twitter.com/jonrohan. Tail his code on http://github.com/jonrohan -->
 <html>
-  <head>
-    <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1">
-    <title>Cync by opcon</title>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
 
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-    <script>
-      (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
-      (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
-      m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
-      })(window,document,'script','//www.google-analytics.com/analytics.js','ga');
-  
-      ga('create', 'UA-43531683-1', 'opcon.github.io');
-      ga('send', 'pageview');
+  <link rel="stylesheet" href="stylesheets/stylesheet.css" media="screen">
+  <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.7.1/jquery.min.js"></script>
+  <script type="text/javascript" src="javascripts/script.js"></script>
 
-    </script>
-    <!--[if lt IE 9]>
-    <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
-    <![endif]-->
-  </head>
-  <body>
-    <div class="wrapper">
-      <header>
-        <h1>Cync</h1>
-        <p>A program written in C# that syncs music playlists to portable (and non-portable) devices</p>
+  <title>Cync</title>
+  <meta name="description" content="A program written in C# that syncs music playlists to portable (and non-portable) devices">
 
-        <p class="view"><a href="https://github.com/opcon/Cync">View the Project on GitHub <small>opcon/Cync</small></a></p>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
 
+</head>
 
-        <ul>
-          <li><a href="https://github.com/opcon/Cync/zipball/master">Download <strong>ZIP File</strong></a></li>
-          <li><a href="https://github.com/opcon/Cync/tarball/master">Download <strong>TAR Ball</strong></a></li>
-          <li><a href="https://github.com/opcon/Cync">View On <strong>GitHub</strong></a></li>
-        </ul>
-      </header>
-      <section>
-        <h2>
+<body>
+
+  <div class="wrapper">
+    <header>
+      <h1 class="title">Cync</h1>
+    </header>
+    <div id="container">
+      <p class="tagline">A program written in C# that syncs music playlists to portable (and non-portable) devices</p>
+      <div id="main" role="main">
+        <div class="download-bar">
+        <div class="inner">
+          <a href="https://github.com/opcon/Cync/tarball/master" class="download-button tar"><span>Download</span></a>
+          <a href="https://github.com/opcon/Cync/zipball/master" class="download-button zip"><span>Download</span></a>
+          <a href="https://github.com/opcon/Cync" class="code">View Cync on GitHub</a>
+        </div>
+        <span class="blc"></span><span class="trc"></span>
+        </div>
+        <article class="markdown-body">
+          <h2>
 <a name="download---github" class="anchor" href="#download---github"><span class="octicon octicon-link"></span></a><a href="https://github.com/opcon/Cync/releases">Download - GitHub</a>
 </h2>
 
@@ -47,6 +45,10 @@
 </h2>
 
 <p>Latest release is v0.1</p>
+
+<p><strong>This is a BETA piece of software, please report any bugs to me; suggestions are also very welcome.</strong></p>
+
+<p><strong>The screenshots at the bottom of this page may help in setting up the software.</strong></p>
 
 <h3>
 <a name="features" class="anchor" href="#features"><span class="octicon octicon-link"></span></a>Features</h3>
@@ -63,6 +65,25 @@
 <li>Reads device songs as well to prevent unneeded copying, will also include these in the resulting playlists if they are present in any of the input playlists</li>
 <li>Collates multiple playlists: simply enter a bunch of folders, and Cync will merge them together to create a master syncing list! Alternatively you can select a playlist to use as the master.</li>
 </ul><h3>
+<a name="tutorial" class="anchor" href="#tutorial"><span class="octicon octicon-link"></span></a>Tutorial</h3>
+
+<ol>
+<li>Add a device on the settings page (the first list box).</li>
+<li>Rename the device.</li>
+<li>Add one destination for each storage path you want to use (the second list box).</li>
+<li>Change the Destination Path to the desired root of the storage.</li>
+<li>Change the file pattern for how the files should be copied across. Valid options are %ARTIST%, %ALBUM%, %TITLE%, %TRACK%.</li>
+<li>Change the playlist root - how the player sees storage that isn't it's main storage. For example in rockbox, the contents of a microsd card can be accessed from <code>&lt;microSD1&gt;/</code>. If the files are placed in the main memory of the player, this should not be needed.</li>
+<li>Set the maximum number of files or minimum free space if required. Setting these to 0 disables the limits. This feature might work, but is not as tested as the rest of the program.</li>
+<li>Set the path to where the playlist files are saved on the device, so they get copied over too!</li>
+<li>Switch to the sync tab, choose the device and path where playlists to be synced are found. Hit scan to scan the playlists and generate information about them. Then choose which ones to sync, and whether one should be the <strong>master</strong> playlist (syncs only what's on the <strong>master</strong> playlist, still copies over the other playlists themselves, just not the songs).</li>
+<li>Hit review to be presented with a list of songs that are either on the device, on the device and in the library, or just in the library. From here select which ones to sync (shouldn't need much changing), then hit Sync and it's done!</li>
+</ol><h3>
+<a name="known-bugs" class="anchor" href="#known-bugs"><span class="octicon octicon-link"></span></a>Known Bugs</h3>
+
+<p><strong>Deleting the last device will cause a crash.</strong></p>
+
+<h3>
 <a name="notes" class="anchor" href="#notes"><span class="octicon octicon-link"></span></a>Notes</h3>
 
 <p>This was built for my own personal use, but I'm hoping that it will help out other people.</p>
@@ -73,18 +94,47 @@
 
 <p>So far I have only tested this on my home machines with a small number of devices - while it functioned correctly there, I can not guarantee it will function correctly on your machine. I take no responsibility for any damages caused by this program, whether to your computer, device or otherwise.</p>
 
-<p><strong>This is a BETA piece of software, please report any bugs to me; suggestions are also very welcome.</strong></p>
-
 <h3>
 <a name="screenshots" class="anchor" href="#screenshots"><span class="octicon octicon-link"></span></a>Screenshots</h3>
 
-<p><img src="http://i.imgur.com/5dG3YlR.png" alt="Numero Uno"><br><img src="http://i.imgur.com/wL4FiZ9.png" alt="Numero Dos"><br><img src="http://i.imgur.com/PqrDKPb.png" alt="Numero...Trois (?)"></p>
-      </section>
-      <footer>
-        <p>This project is maintained by <a href="https://github.com/opcon">opcon</a></p>
-        <p><small>Hosted on GitHub Pages &mdash; Theme by <a href="https://github.com/orderedlist">orderedlist</a></small></p>
-      </footer>
+<p><a href="http://i.imgur.com/5dG3YlR.png">1</a>
+<img src="http://i.imgur.com/5dG3YlR.png" alt="1"></p>
+
+<p><a href="http://i.imgur.com/wL4FiZ9.png">2</a>
+<img src="http://i.imgur.com/wL4FiZ9.png" alt="2"></p>
+
+<p><a href="http://i.imgur.com/PqrDKPb.png">3</a>
+<img src="http://i.imgur.com/PqrDKPb.png" alt="3"></p>
+        </article>
+      </div>
     </div>
-    <script src="javascripts/scale.fix.js"></script>
-  </body>
+    <footer>
+      <div class="owner">
+      <p><a href="https://github.com/opcon" class="avatar"><img src="https://avatars3.githubusercontent.com/u/2180488?v=2&amp;s=60" width="48" height="48"></a> <a href="https://github.com/opcon">opcon</a> maintains <a href="https://github.com/opcon/Cync">Cync</a></p>
+
+
+      </div>
+      <div class="creds">
+        <small>This page generated using <a href="http://pages.github.com/">GitHub Pages</a><br>theme by <a href="https://twitter.com/jonrohan/">Jon Rohan</a></small>
+      </div>
+    </footer>
+  </div>
+  <div class="current-section">
+    <a href="#top">Scroll to top</a>
+    <a href="https://github.com/opcon/Cync/tarball/master" class="tar">tar</a><a href="https://github.com/opcon/Cync/zipball/master" class="zip">zip</a><a href="" class="code">source code</a>
+    <p class="name"></p>
+  </div>
+
+            <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-43531683-1");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
+</body>
 </html>
